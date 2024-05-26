@@ -358,10 +358,15 @@ class Quadrotor(BaseAviary):
         self.DONE_ON_COLLISION = kwargs.get("done_on_collision", False)
         self.DONE_ON_COMPLETION = kwargs.get("done_on_completion", False)
 
-    def reset(self):
+    def reset(self, **kwargs):
         """(Re-)initializes the environment to start an episode.
 
         Mandatory to call at least once after __init__().
+
+        Args:
+            kwargs: Additional arguments to pass to the reset method. Ooptional arguments are
+            'init_state' (ndarray): The initial state of the environment. [x,x_dot, y, y_dot, z, z_dot, phi, theta, psi]
+            'current_gate_id (int): The next gate to pass through.
 
         Returns:
             ndarray: The initial state of the environment.
@@ -458,8 +463,12 @@ class Quadrotor(BaseAviary):
             )
             self.GATES_IDS.append(TMP_ID)
         self._gates_pose = np.array(self._gates_pose)
-        #
-        self.current_gate = 0
+        
+        if kwargs.get("current_gate_id", None) is not None:
+            logger.info(f"Resett provided custom gate start id: {kwargs['current_gate_id']}")
+            self.current_gate = kwargs["current_gate_id"]
+        else:
+            self.current_gate = 0
         #
         # Deactivate select collisions, e.g. between the ground plane and the drone
         # p.setCollisionFilterPair(bodyUniqueIdA=self.PLANE_ID,
@@ -502,19 +511,31 @@ class Quadrotor(BaseAviary):
         )
 
         # Randomize initial state.
-        init_values = {
-            init_name: self.__dict__[init_name.upper()]
-            for init_name in self.INIT_STATE_LABELS[self.QUAD_TYPE]
-        }
-        if self.RANDOMIZED_INIT:
-            init_values = self._randomize_values_by_info(init_values, self.INIT_STATE_RAND_INFO)
-        INIT_XYZ = [init_values.get("init_" + k, 0.0) for k in ["x", "y", "z"]]
-        INIT_VEL = [init_values.get("init_" + k + "_dot", 0.0) for k in ["x", "y", "z"]]
-        INIT_RPY = [init_values.get("init_" + k, 0.0) for k in ["phi", "theta", "psi"]]
-        if self.QUAD_TYPE == QuadType.TWO_D:
-            INIT_ANG_VEL = [0, init_values.get("init_theta_dot", 0.0), 0]
+
+        if kwargs.get("init_state", None) is not None:
+            assert self.QUAD_TYPE == QuadType.THREE_D, "Custom initial state only for 3D quad."
+            logger.info(f"Resett provided custom initial state: {kwargs['init_state']}")
+            init_state = kwargs["init_state"]
+
+            INIT_XYZ = init_state[[0, 2, 4]].tolist()
+            INIT_VEL = init_state[[1, 3, 5]].tolist()
+            INIT_RPY = init_state[[6, 7, 8]].tolist()
+            INIT_ANG_VEL = [0, 0, 0]
+        
         else:
-            INIT_ANG_VEL = [init_values.get("init_" + k, 0.0) for k in ["p", "q", "r"]]
+            init_values = {
+                init_name: self.__dict__[init_name.upper()]
+                for init_name in self.INIT_STATE_LABELS[self.QUAD_TYPE]
+            }
+            if self.RANDOMIZED_INIT:
+                init_values = self._randomize_values_by_info(init_values, self.INIT_STATE_RAND_INFO)
+            INIT_XYZ = [init_values.get("init_" + k, 0.0) for k in ["x", "y", "z"]]
+            INIT_VEL = [init_values.get("init_" + k + "_dot", 0.0) for k in ["x", "y", "z"]]
+            INIT_RPY = [init_values.get("init_" + k, 0.0) for k in ["phi", "theta", "psi"]]
+            if self.QUAD_TYPE == QuadType.TWO_D:
+                INIT_ANG_VEL = [0, init_values.get("init_theta_dot", 0.0), 0]
+            else:
+                INIT_ANG_VEL = [init_values.get("init_" + k, 0.0) for k in ["p", "q", "r"]]
         p.resetBasePositionAndOrientation(
             self.DRONE_IDS[0],
             INIT_XYZ,

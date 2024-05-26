@@ -89,8 +89,13 @@ class FirmwareWrapper(BaseController):
         self.env = env_func()
 
     # region Controller functions
-    def reset(self):
+    def reset(self, **kwargs):
         """Resets the firmware_wrapper object.
+
+        Args:
+            kwargs: Additional arguments to pass to the reset method. Ooptional arguments are
+            'init_state' (ndarray): The initial state of the environment. [x,x_dot, y, y_dot, z, z_dot, phi, theta, psi]
+            'current_gate_id (int): The next gate to pass through.
 
         Todo:
             * Add support for state estimation
@@ -145,7 +150,7 @@ class FirmwareWrapper(BaseController):
             logger.debug("Mellinger controller init test:", firm.controllerMellingerTest())
 
         # Reset environment
-        init_obs, init_info = self.env.reset()
+        init_obs, init_info = self.env.reset(**kwargs)
         init_pos = np.array([init_obs[0], init_obs[2], init_obs[4]])  # global coord, m
         init_vel = np.array([init_obs[1], init_obs[3], init_obs[5]])  # global coord, m/s
         init_rpy = np.array([init_obs[6], init_obs[7], init_obs[8]])  # body coord, rad
@@ -295,6 +300,7 @@ class FirmwareWrapper(BaseController):
                     logger.warning("Drone firmware error. Motors are killed.")
                     self.first_motor_killed_print = False
                 done = True
+            info["has_error"] = self._error
 
             self.action = action
         return obs, reward, done, info, action
