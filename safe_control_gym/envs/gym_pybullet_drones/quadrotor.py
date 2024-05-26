@@ -1102,13 +1102,8 @@ class Quadrotor(BaseAviary):
 
         """
         # Done if goal reached for stabilization task with quadratic cost.
-        if self.TASK == Task.STABILIZATION and self.COST == Cost.QUADRATIC:
-            self.goal_reached = bool(
-                np.linalg.norm(self.state - self.X_GOAL)
-                < self.TASK_INFO["stabilization_goal_tolerance"]
-            )
-            if self.goal_reached:
-                return True
+
+        #! Removed prev code as it collides with later calculation of task_completed
 
         # # Done if the episode length is exceeded.
         # if (self.ctrl_step_counter + 1) / self.CTRL_FREQ >= self.EPISODE_LEN_SEC:
