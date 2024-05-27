@@ -365,8 +365,7 @@ class Quadrotor(BaseAviary):
 
         Args:
             kwargs: Additional arguments to pass to the reset method. Ooptional arguments are
-            'init_state' (ndarray): The initial state of the environment. [x,x_dot, y, y_dot, z, z_dot, phi, theta, psi]
-            'current_gate_id (int): The next gate to pass through.
+            'initial_target_gate_id' (int): first gate to pass through in this episode, initializing point will be set automatically, either within prev gate, or intial point
 
         Returns:
             ndarray: The initial state of the environment.
@@ -464,9 +463,9 @@ class Quadrotor(BaseAviary):
             self.GATES_IDS.append(TMP_ID)
         self._gates_pose = np.array(self._gates_pose)
         
-        if kwargs.get("current_gate_id", None) is not None:
-            logger.info(f"Resett provided custom gate start id: {kwargs['current_gate_id']}")
-            self.current_gate = kwargs["current_gate_id"]
+        if kwargs.get("initial_target_gate_id", None) is not None:
+            #logger.info(f"Resett provided custom gate start id: {kwargs['initial_target_gate_id']}")
+            self.current_gate = kwargs["initial_target_gate_id"]
         else:
             self.current_gate = 0
         #
@@ -512,14 +511,15 @@ class Quadrotor(BaseAviary):
 
         # Randomize initial state.
 
-        if kwargs.get("init_state", None) is not None:
-            assert self.QUAD_TYPE == QuadType.THREE_D, "Custom initial state only for 3D quad."
-            logger.info(f"Resett provided custom initial state: {kwargs['init_state']}")
-            init_state = kwargs["init_state"]
-
-            INIT_XYZ = init_state[[0, 2, 4]].tolist()
-            INIT_VEL = init_state[[1, 3, 5]].tolist()
-            INIT_RPY = init_state[[6, 7, 8]].tolist()
+        if (init_gate_id:=kwargs.get("initial_target_gate_id", None)) is not None and init_gate_id != 0: # init gate = 0, then we use original start position
+            #assert self.QUAD_TYPE == QuadType.THREE_D, "Custom initial state only for 3D quad."
+            # logger.info(f"Resert provided custom start goal, starting from gate: {init_gate_id}")
+            assert init_gate_id < self.NUM_GATES, "Custom initial gate id out of range."
+            
+            ref_gate_pose = self._gates_pose[init_gate_id - 1] # sample prev gate so that we can then fly through current
+            INIT_XYZ = ref_gate_pose[[0, 1, 2]].tolist()
+            INIT_VEL = [0, 0, 0]
+            INIT_RPY = ref_gate_pose[[3, 4, 5]].tolist()
             INIT_ANG_VEL = [0, 0, 0]
         
         else:

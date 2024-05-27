@@ -94,8 +94,6 @@ class FirmwareWrapper(BaseController):
 
         Args:
             kwargs: Additional arguments to pass to the reset method. Ooptional arguments are
-            'init_state' (ndarray): The initial state of the environment. [x,x_dot, y, y_dot, z, z_dot, phi, theta, psi]
-            'current_gate_id (int): The next gate to pass through.
 
         Todo:
             * Add support for state estimation
