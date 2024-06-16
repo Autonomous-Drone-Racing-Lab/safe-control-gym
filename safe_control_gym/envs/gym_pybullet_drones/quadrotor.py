@@ -20,6 +20,7 @@ from safe_control_gym.math_and_models.symbolic_systems import SymbolicModel
 from safe_control_gym.envs.gym_pybullet_drones.base_aviary import BaseAviary
 from safe_control_gym.envs.gym_pybullet_drones.quadrotor_utils import QuadType, cmd2pwm, pwm2rpm
 from safe_control_gym.math_and_models.transformations import transform_trajectory, csRotXYZ
+from munch import munchify
 
 logger = logging.getLogger(__name__)
 
@@ -358,6 +359,18 @@ class Quadrotor(BaseAviary):
         self.DONE_ON_COLLISION = kwargs.get("done_on_collision", False)
         self.DONE_ON_COMPLETION = kwargs.get("done_on_completion", False)
 
+
+
+        # save_base_path = "/home/tim/code/rl_experiments/lsy_drone_racing_rl/logs/gate_pos"
+        # # iterate over path, and add next possible file {gate_pos_0.txt, gate_pos_1.txt, ...}
+        # base_name = "gate_pos_{:d}.txt"
+        # i = 0
+        # while os.path.exists(os.path.join(save_base_path, base_name.format(i))):
+        #     i += 1
+        # self.save_path = os.path.join(save_base_path, base_name.format(i))
+
+
+
     def reset(self, **kwargs):
         """(Re-)initializes the environment to start an episode.
 
@@ -510,7 +523,6 @@ class Quadrotor(BaseAviary):
         )
 
         # Randomize initial state.
-
         if (init_gate_id:=kwargs.get("initial_target_gate_id", None)) is not None and init_gate_id != 0: # init gate = 0, then we use original start position
             #assert self.QUAD_TYPE == QuadType.THREE_D, "Custom initial state only for 3D quad."
             # logger.info(f"Resert provided custom start goal, starting from gate: {init_gate_id}")
@@ -550,6 +562,14 @@ class Quadrotor(BaseAviary):
         self._update_and_store_kinematic_information()
         obs, info = self._get_observation(), self._get_reset_info()
         obs, info = super().after_reset(obs, info)
+
+        
+        # with open(self.save_path, "a") as f:
+        #     # write gates as list 
+        #     for gate in self._gates_pose:
+        #         str_gate = f"[{gate[0]:.4f}, {gate[1]:.4f}, {gate[2]:.4f}, {gate[3]:.4f}, {gate[4]:.4f}, {gate[5]:.4f}]"
+        #         f.write(str_gate)
+        #     f.write("\n")
 
         # Return either an observation and dictionary or just the observation.
         if self.INFO_IN_RESET:
@@ -1336,3 +1356,11 @@ class Quadrotor(BaseAviary):
 
         info.update(self._get_info())
         return info
+
+    def set_gate_obstacle_randomization(self, gate_random_dist, obstace_random_dist):
+        self.RANDOMIZED_GATES_AND_OBS = True
+        update_dict = {
+            "gates": {"distrib": "uniform", "low": -gate_random_dist, "high": gate_random_dist},
+            "obstacles": {"distrib": "uniform", "low": -obstace_random_dist, "high": obstace_random_dist},
+        }
+        self.GATES_AND_OBS_RAND_INFO = munchify(update_dict)
