@@ -1364,3 +1364,12 @@ class Quadrotor(BaseAviary):
             "obstacles": {"distrib": "uniform", "low": -obstace_random_dist, "high": obstace_random_dist},
         }
         self.GATES_AND_OBS_RAND_INFO = munchify(update_dict)
+    
+    def set_init_state_randomization(self, pos_random_dist_x, pos_random_dist_y, pos_random_dist_z):
+        self.RANDOMIZED_INIT = True
+        update_dict = {
+            "init_x": {"distrib": "uniform", "low": -pos_random_dist_x, "high": pos_random_dist_x},
+            "init_y": {"distrib": "uniform", "low": -pos_random_dist_y, "high": pos_random_dist_y},
+            "init_z": {"distrib": "uniform", "low": -pos_random_dist_z, "high": pos_random_dist_z},
+        }
+        self.INIT_STATE_RAND_INFO = munchify(update_dict)
